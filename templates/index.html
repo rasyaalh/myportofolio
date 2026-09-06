@@ -10,20 +10,36 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+    <!-- Hidden checkbox untuk mengontrol Dark Mode secara murni dengan CSS -->
+    <input type="checkbox" id="dark-mode-toggle" class="dark-mode-checkbox">
+
     <header class="site-header">
         <div class="container">
-            <a href="#profile" class="brand">Rasya</a>
-            <nav>
-                <details class="dropdown">
-                    <summary>Profile <span class="arrow">&#9662;</span></summary>
-                    <ul class="dropdown-menu">
-                        <li><a href="#profile">Profile</a></li>
-                        <li><a href="#experience">Track Record</a></li>
-                        <li><a href="#achievements">Achievements</a></li>
-                        <li><a href="#education">Education History</a></li>
-                    </ul>
-                </details>
-            </nav>
+            <a href="#profile" class="brand">RASYA</a>
+            
+            <div class="header-controls">
+                <!-- Tombol Switch Dark Mode (Matahari & Bulan) -->
+                <label for="dark-mode-toggle" class="theme-switch" title="Toggle Dark/Light Mode">
+                    <span class="icon sun">&#9728;</span>
+                    <span class="switch-track">
+                        <span class="switch-thumb"></span>
+                    </span>
+                    <span class="icon moon">&#9789;</span>
+                </label>
+
+                <!-- Menu Dropdown -->
+                <nav>
+                    <details class="dropdown">
+                        <summary>Profile <span class="arrow">&#9662;</span></summary>
+                        <ul class="dropdown-menu">
+                            <li><a href="#profile">Profile</a></li>
+                            <li><a href="#experience">Track Record</a></li>
+                            <li><a href="#achievements">Achievements</a></li>
+                            <li><a href="#education">Education History</a></li>
+                        </ul>
+                    </details>
+                </nav>
+            </div>
         </div>
     </header>
     <main>
