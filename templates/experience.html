@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experience {{ name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Hidden checkbox untuk mengontrol Dark Mode secara murni dengan CSS -->
+    <input type="checkbox" id="dark-mode-toggle" class="dark-mode-checkbox">
+
+    <header class="site-header">
+        <div class="container">
+            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
+            
+            <div class="header-controls">
+                <!-- Tombol Switch Dark Mode (Matahari & Bulan) -->
+                <label for="dark-mode-toggle" class="theme-switch" title="Toggle Dark/Light Mode">
+                    <span class="icon sun">&#9728;</span>
+                    <span class="switch-track">
+                        <span class="switch-thumb"></span>
+                    </span>
+                    <span class="icon moon">&#9789;</span>
+                </label>
+
+                <!-- Menu Dropdown dengan routing dinamis Django -->
+                <nav>
+                    <details class="dropdown">
+                        <summary>Menu <span class="arrow">&#9662;</span></summary>
+                        <ul class="dropdown-menu">
+                            <li><a href="{% url 'main:show_main' %}">Profile Web</a></li>
+                            <li><a href="{% url 'main:show_experience' %}">Experience Database</a></li>
+                            <li><a href="{% url 'main:show_main' %}#achievements">Achievements</a></li>
+                            <li><a href="{% url 'main:show_main' %}#education">Education History</a></li>
+                        </ul>
+                    </details>
+                </nav>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <section class="experience-section" id="experience">
+            <div class="container">
+                <p class="section-kicker">My Experience</p>
+                <h1>Experience</h1>
+                
+                <div class="experience-grid">
+                    {% for experience in experience_list %}
+                        <article class="experience-card">
+                            <span class="experience-category">
+                                {{ experience.get_category_display }}
+                            </span>
+                            <h2>{{ experience.title }}</h2>
+                            <p class="experience-description">
+                                {{ experience.description }}
+                            </p>
+                            
+                            {% if experience.is_ongoing %}
+                                <p class="experience-status">Sedang berlangsung</p>
+                            {% else %}
+                                <p class="experience-status">Finished</p>
+                            {% endif %}
+                        </article>
+                    {% empty %}
+                        <p class="empty-state">
+                            Belum ada pengalaman yang ditambahkan.
+                        </p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+        </div>
+    </footer>
+</body>
+</html>
