@@ -25,3 +25,33 @@ class Experience(models.Model):
     @property
     def is_ongoing(self):
         return self.ended_at is None
+
+#TUGAS 2
+
+class Achievement(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    rank = models.CharField(max_length=100)
+    description = models.TextField()
+    year = models.IntegerField()
+
+    def __str__(self):
+        return self.title
+
+class Education(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    institution = models.CharField(max_length=255)
+    degree = models.CharField(max_length=255)
+    period = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.institution
+
+class Certification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    issuer = models.CharField(max_length=255)
+    issue_date = models.DateField()
+
+    def __str__(self):
+        return self.title

@@ -10,39 +10,35 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <!-- Hidden checkbox untuk mengontrol Dark Mode secara murni dengan CSS -->
     <input type="checkbox" id="dark-mode-toggle" class="dark-mode-checkbox">
 
     <header class="site-header">
         <div class="container">
-            <!-- Brand link diarahkan kembali ke halaman utama -->
             <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
             
             <div class="header-controls">
-                <!-- Tombol Switch Dark Mode (Matahari & Bulan) -->
                 <label for="dark-mode-toggle" class="theme-switch" title="Toggle Dark/Light Mode">
                     <span class="icon sun">&#9728;</span>
-                    <span class="switch-track">
-                        <span class="switch-thumb"></span>
-                    </span>
+                    <span class="switch-track"><span class="switch-thumb"></span></span>
                     <span class="icon moon">&#9789;</span>
                 </label>
 
-                <!-- Menu Dropdown dengan routing dinamis Django -->
                 <nav>
                     <details class="dropdown">
                         <summary>Menu <span class="arrow">&#9662;</span></summary>
                         <ul class="dropdown-menu">
                             <li><a href="{% url 'main:show_main' %}">Profile Web</a></li>
-                            <li><a href="{% url 'main:show_experience' %}">Experience Database</a></li>
-                            <li><a href="{% url 'main:show_main' %}#achievements">Achievements</a></li>
-                            <li><a href="{% url 'main:show_main' %}#education">Education History</a></li>
+                            <li><a href="{% url 'main:show_experience' %}">Experience</a></li>
+                            <li><a href="{% url 'main:show_achievements' %}">Achievements</a></li>
+                            <li><a href="{% url 'main:show_education' %}">Education History</a></li>
+                            <li><a href="{% url 'main:show_certifications' %}">Certifications</a></li>
                         </ul>
                     </details>
                 </nav>
             </div>
         </div>
     </header>
+    
     <main>
         <section class="hero" id="profile">
             <div class="container hero-grid">
@@ -74,113 +70,14 @@
                 </div>
             </div>
         </section>
-
-        <!-- Experience Section (Static version kept for design consistency on main page) -->
-        <section class="content-section" id="experience-summary">
-            <div class="container">
-                <h2 class="section-title">Track Record & Experience</h2>
-                <div class="card-grid">
-                    <article class="card">
-                        <span class="card-date">2023 - 2024</span>
-                        <h3>Class President, Olympiad Class</h3>
-                        <p>Led the Olympiad Class at MAN 1 Banda Aceh. Implemented various improvements focused on class infrastructure and fostering better synergy among students.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-date">2023</span>
-                        <h3>Event Division Committee for Saleum 8</h3>
-                        <p>Managed and organized the event division for the Saleum 8 activities held at MAN 1 Banda Aceh.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-date">2021 - 2022</span>
-                        <h3>Table Tennis Club Manager</h3>
-                        <p>Managed the school-level table tennis organization and coordinated its activities.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-date">2019 - 2022</span>
-                        <h3>Scout Leader</h3>
-                        <p>Participated in scouting activities, competed in city to provincial-level championships, and served as the Scout Leader for MTsN 1 Banda Aceh.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <!-- Achievements Section -->
-        <section class="content-section" id="achievements">
-            <div class="container">
-                <h2 class="section-title">Awards & Achievements</h2>
-                <div class="card-grid">
-                    <article class="card">
-                        <span class="card-badge">1st Place</span>
-                        <h3>National Science Olympiad (OSN-K) - Informatics</h3>
-                        <p>Won 1st place in the 2024 Regency/City level National Science Olympiad in Informatics, advancing to the provincial level.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-badge">2nd Place</span>
-                        <h3>National Science Olympiad (OSN-P) - Informatics</h3>
-                        <p>Secured 2nd place across Aceh in the 2024 Provincial level National Science Olympiad in Informatics.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-badge">1st Place</span>
-                        <h3>COINS INFEST X USK</h3>
-                        <p>Won 1st place in the Computer Olympiad of INFEST 2024.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-badge">2nd Place</span>
-                        <h3>Computer Multi-Challenge Day USK</h3>
-                        <p>Secured 2nd place in the Computer Olympiad competition at USK in 2024.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-badge">1st Place</span>
-                        <h3>National Insight Quiz Competition</h3>
-                        <p>Won 1st place with my team in the National Insight Quiz Competition held at SMA Methodist Banda Aceh in 2024.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-badge">National Semifinalist</span>
-                        <h3>MYRES 2023 (Top 30 National)</h3>
-                        <p>Advanced to the semifinals in the MST field with the research paper: "Analysis of Facial Expressions of Autistic Children in Non-Verbal Communication through Thermal Imaging Technology".</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-badge">3rd Place</span>
-                        <h3>National Science Olympiad 2023 - Informatics</h3>
-                        <p>Secured 3rd place in the city-level (Banda Aceh) OSN 2023 and advanced to the provincial level as a finalist.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <!-- Education Section -->
-        <section class="content-section" id="education">
-            <div class="container">
-                <h2 class="section-title">Education History</h2>
-                <div class="card-grid">
-                    <article class="card">
-                        <span class="card-date">2025 - Present</span>
-                        <h3>Universitas Indonesia</h3>
-                        <p>Bachelor's Degree in Computer Science (Ilmu Komputer).</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-date">2022 - 2025</span>
-                        <h3>MAN 1 Banda Aceh</h3>
-                        <p>High School Education.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-date">2019 - 2022</span>
-                        <h3>MTsN 1 Banda Aceh</h3>
-                        <p>Junior High School Education.</p>
-                    </article>
-                    <article class="card">
-                        <span class="card-date">2013 - 2019</span>
-                        <h3>SDN 22 Banda Aceh</h3>
-                        <p>Elementary School Education.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
     </main>
+
     <footer class="site-footer">
         <div class="container">
-            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+            <p>&copy; 2026 {{ name }}. Faculty of Computer Science, Universitas Indonesia.</p>
         </div>
     </footer>
+
+    <script src="/static/js/script.js"></script>
 </body>
 </html>
