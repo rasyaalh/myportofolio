@@ -23,8 +23,12 @@ def show_main(request):
     if not Certification.objects.exists():
         Certification.objects.create(title="Art & Design Fundamentals (10-Hour MOOC)", issuer="MPKT Final Project", issue_date=datetime.date(2026, 5, 10))
 
-    if not Experience.objects.exists():
-        Experience.objects.create(title="Project Officer, Saman Saweu Gampong (SSG)", description="Led the proposal drafting, managed data organization, and served as the Project Officer for the SSG 2026 cultural performance outreach.", category="full-time", ended_at=timezone.now())
+    if Experience.objects.count() <= 1:
+        Experience.objects.get_or_create(title="Class President, Olympiad Class", defaults={"description": "Led the Olympiad Class at MAN 1 Banda Aceh. Implemented various improvements focused on class infrastructure and fostering better synergy among students.", "category": "volunteer", "ended_at": timezone.now()})
+        Experience.objects.get_or_create(title="Event Division Committee for Saleum 8", defaults={"description": "Managed and organized the event division for the Saleum 8 activities held at MAN 1 Banda Aceh.", "category": "volunteer", "ended_at": timezone.now()})
+        Experience.objects.get_or_create(title="Table Tennis Club Manager", defaults={"description": "Managed the school-level table tennis organization and coordinated its activities.", "category": "volunteer", "ended_at": timezone.now()})
+        Experience.objects.get_or_create(title="Scout Leader", defaults={"description": "Participated in scouting activities, competed in city to provincial-level championships, and served as the Scout Leader for MTsN 1 Banda Aceh.", "category": "volunteer", "ended_at": timezone.now()})
+        Experience.objects.get_or_create(title="Project Officer, Saman Saweu Gampong (SSG)", defaults={"description": "Led the proposal drafting, managed data organization, and served as the Project Officer for the SSG 2026 cultural performance outreach.", "category": "full-time", "ended_at": timezone.now()})
     # -
 
     context = {
