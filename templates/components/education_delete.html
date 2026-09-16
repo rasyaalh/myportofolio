@@ -1,0 +1,15 @@
+<button type="button" class="button button-danger" popovertarget="delete-education-{{ edu.id }}">Hapus</button>
+
+<div id="delete-education-{{ edu.id }}" class="project-delete-modal" popover="auto">
+    <div class="project-delete-modal_content">
+        <h2>Hapus Pendidikan?</h2>
+        <p>Apakah Anda yakin ingin menghapus <strong>{{ edu.institution }}</strong>?</p>
+        <div class="project-delete-modal_actions">
+            <button type="button" class="button button-secondary" popovertarget="delete-education-{{ edu.id }}" popovertargetaction="hide">Batal</button>
+            <form method="post" action="{% url 'main:delete_education' edu.id %}">
+                {% csrf_token %}
+                <button type="submit" class="button button-danger">Ya, Hapus</button>
+            </form>
+        </div>
+    </div>
+</div>

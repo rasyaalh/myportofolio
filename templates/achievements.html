@@ -1,68 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends 'base.html' %}
+
+{% block meta %}
     <title>Achievements - {{ name }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <input type="checkbox" id="dark-mode-toggle" class="dark-mode-checkbox">
-    <header class="site-header">
+{% endblock meta %}
+
+{% block content %}
+<main>
+    <section class="content-section" id="achievements">
         <div class="container">
-            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-            <div class="header-controls">
-                <label for="dark-mode-toggle" class="theme-switch" title="Toggle Dark/Light Mode">
-                    <span class="icon sun">&#9728;</span>
-                    <span class="switch-track"><span class="switch-thumb"></span></span>
-                    <span class="icon moon">&#9789;</span>
-                </label>
-                <nav>
-                    <details class="dropdown">
-                        <summary>Menu <span class="arrow">&#9662;</span></summary>
-                        <ul class="dropdown-menu">
-                            <li><a href="{% url 'main:show_main' %}">Profile Web</a></li>
-                            <li><a href="{% url 'main:show_experience' %}">Experience</a></li>
-                            <li><a href="{% url 'main:show_achievements' %}">Achievements</a></li>
-                            <li><a href="{% url 'main:show_education' %}">Education History</a></li>
-                            <li><a href="{% url 'main:show_certifications' %}">Certifications</a></li>
-                        </ul>
-                    </details>
-                </nav>
+            <p class="section-kicker">Awards & Achievements</p>
+            <h1>Awards & Achievements</h1>
+            
+            <!-- Tombol Tambah Data -->
+            <a href="{% url 'main:create_achievement' %}" class="button" style="margin-bottom: 2rem; display: inline-block;">
+                + Tambah Penghargaan
+            </a>
+
+            <div class="card-grid">
+                {% for achievement in achievement_list %}
+                    <article class="experience-card">
+                        <span class="experience-category">{{ achievement.rank }}</span>
+                        <h2>{{ achievement.title }}</h2>
+                        <p class="experience-description">{{ achievement.description }}</p>
+                        <p class="experience-status">Year: {{ achievement.year }}</p>
+                        
+                        <!-- tombol dan Pop-up Hapus -->
+                        <div style="margin-top: 1rem;">
+                            {% include "components/achievement_delete.html" with achievement=achievement %}
+                        </div>
+
+                    </article>
+                {% empty %}
+                    <p class="empty-state">No achievements added yet.</p>
+                {% endfor %}
             </div>
         </div>
-    </header>
-    
-    <main>
-        <section class="content-section" id="achievements">
-            <div class="container">
-                <p class="section-kicker">Awards & Achievements</p>
-                <h1>Awards & Achievements</h1>
-                <div class="card-grid">
-                    {% for achievement in achievement_list %}
-                        <article class="experience-card">
-                            <span class="experience-category">{{ achievement.rank }}</span>
-                            <h2>{{ achievement.title }}</h2>
-                            <p class="experience-description">{{ achievement.description }}</p>
-                            <p class="experience-status">Year: {{ achievement.year }}</p>
-                        </article>
-                    {% empty %}
-                        <p class="empty-state">No achievements added yet.</p>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; 2026 {{ name }}. Faculty of Computer Science, Universitas Indonesia.</p>
-        </div>
-    </footer>
-
-    <script src="/static/js/script.js"></script>
-</body>
-</html>
+    </section>
+</main>
+{% endblock content %}

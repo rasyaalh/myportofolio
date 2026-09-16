@@ -1,0 +1,18 @@
+<button type="button" class="button button-danger" popovertarget="delete-achievement-{{ achievement.id }}">
+    Hapus
+</button>
+
+<div id="delete-achievement-{{ achievement.id }}" class="project-delete-modal" popover="auto">
+    <div class="project-delete-modal_content">
+        <h2>Hapus Penghargaan?</h2>
+        <p>Apakah Anda yakin ingin menghapus <strong>{{ achievement.title }}</strong>?</p>
+        <div class="project-delete-modal_actions">
+            <button type="button" class="button button-secondary" popovertarget="delete-achievement-{{ achievement.id }}" popovertargetaction="hide">Batal</button>
+            
+            <form method="post" action="{% url 'main:delete_achievement' achievement.id %}">
+                {% csrf_token %}
+                <button type="submit" class="button button-danger">Ya, Hapus</button>
+            </form>
+        </div>
+    </div>
+</div>
