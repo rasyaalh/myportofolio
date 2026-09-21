@@ -27,4 +27,10 @@ urlpatterns = [
     path("achievements/<str:id>/delete/", delete_achievement, name="delete_achievement"),
     path("education/<str:id>/delete/", delete_education, name="delete_education"),
     path("certifications/<str:id>/delete/", delete_certification, name="delete_certification"),
+
+    # Fitur Ubah (Edit)
+    path("experience/<str:id>/edit/", edit_experience, name="edit_experience"),
+    path("achievements/<str:id>/edit/", edit_achievement, name="edit_achievement"),
+    path("education/<str:id>/edit/", edit_education, name="edit_education"),
+    path("certifications/<str:id>/edit/", edit_certification, name="edit_certification"),
 ]
