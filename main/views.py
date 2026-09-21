@@ -166,3 +166,45 @@ def delete_certification(request, id):
         data.delete()
         messages.success(request, "Sertifikasi berhasil dihapus!")
     return redirect("main:show_certifications")
+
+# FUNGSI UBAH DATA (UPDATE)
+def edit_achievement(request, id):
+    data = get_object_or_404(Achievement, pk=id)
+    form = AchievementForm(request.POST or None, instance=data)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Penghargaan berhasil diperbarui!")
+        return redirect("main:show_achievements")
+    
+    context = {"name": "Rasya Al Hawari", "form": form}
+    return render(request, "edit_achievement.html", context)
+
+def edit_experience(request, id):
+    data = get_object_or_404(Experience, pk=id)
+    form = ExperienceForm(request.POST or None, instance=data)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Pengalaman berhasil diperbarui!")
+        return redirect("main:show_experience")
+    
+    context = {"name": "Rasya Al Hawari", "form": form}
+    return render(request, "edit_experience.html", context)
+
+def edit_education(request, id):
+    data = get_object_or_404(Education, pk=id)
+    form = EducationForm(request.POST or None, instance=data)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Pendidikan berhasil diperbarui!")
+        return redirect("main:show_education")
+    
+    context = {"name": "Rasya Al Hawari", "form": form}
+    return render(request, "edit_education.html", context)
+
+def edit_certification(request, id):
+    data = get_object_or_404(Certification, pk=id)
+    form = CertificationForm(request.POST or None, instance=data)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Sertifikasi berhasil diperbarui!")
+        return redirect("main:show_certifications")

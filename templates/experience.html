@@ -11,40 +11,66 @@
             <p class="section-kicker">My Experience</p>
             <h1>Experience</h1>
             
-            <!-- Tombol Tambah Data -->
             <a href="{% url 'main:create_experience' %}" class="button" style="margin-bottom: 2rem; display: inline-block;">
                 + Tambah Pengalaman
             </a>
             
-            <div class="experience-grid">
-                {% for experience in experience_list %}
-                    <article class="experience-card">
-                        <span class="experience-category">
-                            {{ experience.get_category_display }}
-                        </span>
-                        <h2>{{ experience.title }}</h2>
-                        <p class="experience-description">
-                            {{ experience.description }}
-                        </p>
-                        
-                        {% if experience.is_ongoing %}
-                            <p class="experience-status">Ongoing</p>
-                        {% else %}
-                            <p class="experience-status">Finished</p>
-                        {% endif %}
-
-                        <!-- Tombol dan Pop-up Hapus -->
-                        <div style="margin-top: 1rem;">
-                            {% include "components/experience_delete.html" with experience=experience %}
-                        </div>
-                    </article>
-                {% empty %}
-                    <p class="empty-state">
-                        No experience added yet.
-                    </p>
-                {% endfor %}
-            </div>
+            <div id="experience_cards" class="experience-grid"></div>
         </div>
     </section>
 </main>
+
+<script>
+    async function getExperience() {
+        return fetch("{% url 'main:get_experience_json' %}").then((res) => res.json())
+    }
+
+    async function refreshExperience() {
+        document.getElementById("experience_cards").innerHTML = "";
+        const experiences = await getExperience();
+        let htmlString = "";
+        
+        if (experiences.length === 0) {
+            htmlString = '<p class="empty-state">No experience added yet.</p>';
+        } else {
+            experiences.forEach((item) => {
+                const pk = item.pk;
+                const title = item.fields.title;
+                const category = item.fields.category;
+                const description = item.fields.description;
+                
+                htmlString += `
+                <article class="experience-card">
+                    <span class="experience-category">${category}</span>
+                    <h2>${title}</h2>
+                    <p class="experience-description">${description}</p>
+                    
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <a href="/experience/${pk}/edit/" class="button button-secondary">Edit</a>
+                        
+                        <button type="button" class="button button-danger" popovertarget="delete-experience-${pk}">Hapus</button>
+
+                        <div id="delete-experience-${pk}" class="project-delete-modal" popover="auto">
+                            <div class="project-delete-modal_content">
+                                <h2>Hapus Pengalaman?</h2>
+                                <p>Apakah Anda yakin ingin menghapus <strong>${title}</strong>?</p>
+                                <div class="project-delete-modal_actions">
+                                    <button type="button" class="button button-secondary" popovertarget="delete-experience-${pk}" popovertargetaction="hide">Batal</button>
+                                    <form method="post" action="/experience/${pk}/delete/">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button button-danger">Ya, Hapus</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                `;
+            });
+        }
+        document.getElementById("experience_cards").innerHTML = htmlString;
+    }
+
+    refreshExperience();
+</script>
 {% endblock content %}

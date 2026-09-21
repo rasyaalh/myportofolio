@@ -11,28 +11,66 @@
             <p class="section-kicker">Academic History</p>
             <h1>Education History</h1>
 
-            <!-- Tombol Tambah Data -->
             <a href="{% url 'main:create_education' %}" class="button" style="margin-bottom: 2rem; display: inline-block;">
                 + Tambah Pendidikan
             </a>
 
-            <div class="card-grid">
-                {% for edu in education_list %}
-                    <article class="experience-card">
-                        <span class="experience-category">{{ edu.period }}</span>
-                        <h2>{{ edu.institution }}</h2>
-                        <p class="experience-description">{{ edu.degree }}</p>
-
-                        <!-- Tombol dan Pop-up Hapus -->
-                        <div style="margin-top: 1rem;">
-                            {% include "components/education_delete.html" with edu=edu %}
-                        </div>
-                    </article>
-                {% empty %}
-                    <p class="empty-state">No education history added yet.</p>
-                {% endfor %}
-            </div>
+            <div id="education_cards" class="card-grid"></div>
         </div>
     </section>
 </main>
+
+<script>
+    async function getEducation() {
+        return fetch("{% url 'main:get_education_json' %}").then((res) => res.json())
+    }
+
+    async function refreshEducation() {
+        document.getElementById("education_cards").innerHTML = "";
+        const education = await getEducation();
+        let htmlString = "";
+        
+        if (education.length === 0) {
+            htmlString = '<p class="empty-state">No education history added yet.</p>';
+        } else {
+            education.forEach((item) => {
+                const pk = item.pk;
+                const institution = item.fields.institution;
+                const degree = item.fields.degree;
+                const period = item.fields.period;
+                
+                htmlString += `
+                <article class="experience-card">
+                    <span class="experience-category">${period}</span>
+                    <h2>${institution}</h2>
+                    <p class="experience-description">${degree}</p>
+
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <a href="/education/${pk}/edit/" class="button button-secondary">Edit</a>
+                        
+                        <button type="button" class="button button-danger" popovertarget="delete-education-${pk}">Hapus</button>
+
+                        <div id="delete-education-${pk}" class="project-delete-modal" popover="auto">
+                            <div class="project-delete-modal_content">
+                                <h2>Hapus Pendidikan?</h2>
+                                <p>Apakah Anda yakin ingin menghapus <strong>${institution}</strong>?</p>
+                                <div class="project-delete-modal_actions">
+                                    <button type="button" class="button button-secondary" popovertarget="delete-education-${pk}" popovertargetaction="hide">Batal</button>
+                                    <form method="post" action="/education/${pk}/delete/">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button button-danger">Ya, Hapus</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                `;
+            });
+        }
+        document.getElementById("education_cards").innerHTML = htmlString;
+    }
+
+    refreshEducation();
+</script>
 {% endblock content %}

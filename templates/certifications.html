@@ -11,28 +11,66 @@
             <p class="section-kicker">Certifications & Courses</p>
             <h1>Certifications & Courses</h1>
 
-            <!-- Tombol Tambah Data -->
             <a href="{% url 'main:create_certification' %}" class="button" style="margin-bottom: 2rem; display: inline-block;">
                 + Tambah Sertifikasi
             </a>
 
-            <div class="card-grid">
-                {% for cert in certification_list %}
-                    <article class="experience-card">
-                        <span class="experience-category">{{ cert.issuer }}</span>
-                        <h2>{{ cert.title }}</h2>
-                        <p class="experience-status">Issued: {{ cert.issue_date|date:"F Y" }}</p>
-
-                        <!-- Tombol dan Pop-up Hapus -->
-                        <div style="margin-top: 1rem;">
-                            {% include "components/certification_delete.html" with cert=cert %}
-                        </div>
-                    </article>
-                {% empty %}
-                    <p class="empty-state">No certifications added yet.</p>
-                {% endfor %}
-            </div>
+            <div id="certification_cards" class="card-grid"></div>
         </div>
     </section>
 </main>
+
+<script>
+    async function getCertifications() {
+        return fetch("{% url 'main:get_certifications_json' %}").then((res) => res.json())
+    }
+
+    async function refreshCertifications() {
+        document.getElementById("certification_cards").innerHTML = "";
+        const certifications = await getCertifications();
+        let htmlString = "";
+        
+        if (certifications.length === 0) {
+            htmlString = '<p class="empty-state">No certifications added yet.</p>';
+        } else {
+            certifications.forEach((item) => {
+                const pk = item.pk;
+                const title = item.fields.title;
+                const issuer = item.fields.issuer;
+                const issue_date = item.fields.issue_date;
+                
+                htmlString += `
+                <article class="experience-card">
+                    <span class="experience-category">${issuer}</span>
+                    <h2>${title}</h2>
+                    <p class="experience-status">Issued: ${issue_date}</p>
+
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <a href="/certifications/${pk}/edit/" class="button button-secondary">Edit</a>
+                        
+                        <button type="button" class="button button-danger" popovertarget="delete-certification-${pk}">Hapus</button>
+
+                        <div id="delete-certification-${pk}" class="project-delete-modal" popover="auto">
+                            <div class="project-delete-modal_content">
+                                <h2>Hapus Sertifikasi?</h2>
+                                <p>Apakah Anda yakin ingin menghapus <strong>${title}</strong>?</p>
+                                <div class="project-delete-modal_actions">
+                                    <button type="button" class="button button-secondary" popovertarget="delete-certification-${pk}" popovertargetaction="hide">Batal</button>
+                                    <form method="post" action="/certifications/${pk}/delete/">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button button-danger">Ya, Hapus</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                `;
+            });
+        }
+        document.getElementById("certification_cards").innerHTML = htmlString;
+    }
+
+    refreshCertifications();
+</script>
 {% endblock content %}

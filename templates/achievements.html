@@ -16,25 +16,67 @@
                 + Tambah Penghargaan
             </a>
 
-            <div class="card-grid">
-                {% for achievement in achievement_list %}
-                    <article class="experience-card">
-                        <span class="experience-category">{{ achievement.rank }}</span>
-                        <h2>{{ achievement.title }}</h2>
-                        <p class="experience-description">{{ achievement.description }}</p>
-                        <p class="experience-status">Year: {{ achievement.year }}</p>
-                        
-                        <!-- tombol dan Pop-up Hapus -->
-                        <div style="margin-top: 1rem;">
-                            {% include "components/achievement_delete.html" with achievement=achievement %}
-                        </div>
+            <div id="achievement_cards" class="card-grid"></div>
 
-                    </article>
-                {% empty %}
-                    <p class="empty-state">No achievements added yet.</p>
-                {% endfor %}
-            </div>
         </div>
     </section>
 </main>
+
+<!-- SCRIPT FETCH & DESERIALISASI JSON -->
+<script>
+    async function getAchievements() {
+        return fetch("{% url 'main:get_achievements_json' %}").then((res) => res.json())
+    }
+
+    async function refreshAchievements() {
+        document.getElementById("achievement_cards").innerHTML = "";
+        const achievements = await getAchievements();
+        let htmlString = "";
+        
+        if (achievements.length === 0) {
+            htmlString = '<p class="empty-state">No achievements added yet.</p>';
+        } else {
+            achievements.forEach((item) => {
+                const pk = item.pk;
+                const title = item.fields.title;
+                const rank = item.fields.rank;
+                const description = item.fields.description;
+                const year = item.fields.year;
+                
+                htmlString += `
+                <article class="experience-card">
+                    <span class="experience-category">${rank}</span>
+                    <h2>${title}</h2>
+                    <p class="experience-description">${description}</p>
+                    <p class="experience-status">Year: ${year}</p>
+                    
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <a href="/achievements/${pk}/edit/" class="button button-secondary">Edit</a>
+                        
+                        <!-- Tombol & Modal Hapus -->
+                        <button type="button" class="button button-danger" popovertarget="delete-achievement-${pk}">Hapus</button>
+
+                        <div id="delete-achievement-${pk}" class="project-delete-modal" popover="auto">
+                            <div class="project-delete-modal_content">
+                                <h2>Hapus Penghargaan?</h2>
+                                <p>Apakah Anda yakin ingin menghapus <strong>${title}</strong>?</p>
+                                <div class="project-delete-modal_actions">
+                                    <button type="button" class="button button-secondary" popovertarget="delete-achievement-${pk}" popovertargetaction="hide">Batal</button>
+                                    <form method="post" action="/achievements/${pk}/delete/">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button button-danger">Ya, Hapus</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                `;
+            });
+        }
+        document.getElementById("achievement_cards").innerHTML = htmlString;
+    }
+
+    refreshAchievements();
+</script>
 {% endblock content %}
