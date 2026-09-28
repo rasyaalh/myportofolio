@@ -17,6 +17,20 @@
             </a>
             {% endif %}
             
+            <!-- FITUR KREATIVITAS: Live Search & Category Filter -->
+            <div style="margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <input type="text" id="search-input" placeholder="Cari pengalaman berdasarkan judul/deskripsi..." style="padding: 0.6rem 1rem; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 250px; font-size: 0.95rem;">
+                <select id="category-filter" style="padding: 0.6rem 1rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; background-color: white;">
+                    <option value="">Semua Kategori</option>
+                    <option value="internship">Internship</option>
+                    <option value="research">Research</option>
+                    <option value="volunteer">Volunteer</option>
+                    <option value="part-time">Part-Time</option>
+                    <option value="full-time">Full-Time</option>
+                    <option value="freelance">Freelance</option>
+                </select>
+            </div>
+
             <div id="experience_cards" class="experience-grid"></div>
         </div>
     </section>
@@ -24,19 +38,49 @@
 
 <script>
     const isSuperuser = "{% if user.is_superuser %}true{% else %}false{% endif %}" === "true";
+    const isEditorRole = "{% if is_editor %}true{% else %}false{% endif %}" === "true";
     const currentUser = "{{ user.username }}";
+
+    let allExperiences = [];
 
     async function getExperience() {
         return fetch("{% url 'main:get_experience_json' %}").then((res) => res.json());
     }
 
-    async function refreshExperience() {
-        document.getElementById("experience_cards").innerHTML = "";
-        const experiences = await getExperience();
+    async function initExperience() {
+        allExperiences = await getExperience();
+        renderExperiences(allExperiences);
+
+        // Tambahkan event listener untuk memicu penyaringan secara real-time
+        document.getElementById("search-input").addEventListener("input", filterExperiences);
+        document.getElementById("category-filter").addEventListener("change", filterExperiences);
+    }
+
+    function filterExperiences() {
+        const keyword = document.getElementById("search-input").value.toLowerCase();
+        const selectedCategory = document.getElementById("category-filter").value;
+
+        const filtered = allExperiences.filter((item) => {
+            const title = item.fields.title.toLowerCase();
+            const description = item.fields.description.toLowerCase();
+            const category = item.fields.category;
+
+            const matchesKeyword = title.includes(keyword) || description.includes(keyword);
+            const matchesCategory = selectedCategory === "" || category === selectedCategory;
+
+            return matchesKeyword && matchesCategory;
+        });
+
+        renderExperiences(filtered);
+    }
+
+    function renderExperiences(experiences) {
+        const container = document.getElementById("experience_cards");
+        container.innerHTML = "";
         let htmlString = "";
         
         if (experiences.length === 0) {
-            htmlString = '<p class="empty-state">No experience added yet.</p>';
+            htmlString = '<p class="empty-state">Tidak ada pengalaman yang sesuai dengan pencarian.</p>';
         } else {
             experiences.forEach((item) => {
                 const pk = item.pk;
@@ -65,11 +109,16 @@
                 `;
                 
                 let actionButtons = "";
-                if (isSuperuser) {
-                    actionButtons = `
+                
+                if (isSuperuser || isEditorRole) {
+                    actionButtons += `
                     <div style="margin-top: 1rem; display: inline-flex; gap: 0.5rem;">
                         <a href="/experience/${pk}/edit/" class="button button-secondary">Edit</a>
-                        
+                    `;
+                }
+
+                if (isSuperuser) {
+                    actionButtons += `
                         <button type="button" class="button button-danger" popovertarget="delete-experience-${pk}">Hapus</button>
 
                         <div id="delete-experience-${pk}" class="project-delete-modal" popover="auto">
@@ -85,8 +134,11 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
                     `;
+                }
+
+                if (isSuperuser || isEditorRole) {
+                    actionButtons += `</div>`;
                 }
 
                 htmlString += `
@@ -102,9 +154,9 @@
                 `;
             });
         }
-        document.getElementById("experience_cards").innerHTML = htmlString;
+        container.innerHTML = htmlString;
     }
 
-    refreshExperience();
+    initExperience();
 </script>
 {% endblock content %}

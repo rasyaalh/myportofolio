@@ -15,6 +15,10 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 
+# FUNGSI BANTUAN UNTUK CEK EDITOR
+def is_editor(user):
+    return user.groups.filter(name='Editor').exists()
+
 # FUNGSI AUTENTIKASI (REGISTER, LOGIN, LOGOUT)
 def register(request):
     form = UserCreationForm()
@@ -93,11 +97,12 @@ def show_main(request):
     }
     return render(request, "index.html", context)
 
-# FUNGSI MENAMPILKAN HALAMAN LIST (PUBLIK)
+# FUNGSI MENAMPILKAN HALAMAN LIST (PUBLIK) DENGAN STATUS EDITOR
 def show_experience(request):
     context = {
         "name": request.user.username if request.user.is_authenticated else "Rasya Al Hawari",
         "experience_list": Experience.objects.all(),
+        "is_editor": is_editor(request.user) if request.user.is_authenticated else False,
     }
     return render(request, "experience.html", context)
 
@@ -105,6 +110,7 @@ def show_achievements(request):
     context = {
         "name": request.user.username if request.user.is_authenticated else "Rasya Al Hawari",
         "achievement_list": Achievement.objects.all(),
+        "is_editor": is_editor(request.user) if request.user.is_authenticated else False,
     }
     return render(request, "achievements.html", context)
 
@@ -112,6 +118,7 @@ def show_education(request):
     context = {
         "name": request.user.username if request.user.is_authenticated else "Rasya Al Hawari",
         "education_list": Education.objects.all(),
+        "is_editor": is_editor(request.user) if request.user.is_authenticated else False,
     }
     return render(request, "education.html", context)
 
@@ -119,6 +126,7 @@ def show_certifications(request):
     context = {
         "name": request.user.username if request.user.is_authenticated else "Rasya Al Hawari",
         "certification_list": Certification.objects.all(),
+        "is_editor": is_editor(request.user) if request.user.is_authenticated else False,
     }
     return render(request, "certifications.html", context)
 
@@ -200,7 +208,7 @@ def get_certifications_json(request):
     data = Certification.objects.all()
     return HttpResponse(serializers.serialize("json", data, use_natural_foreign_keys=True), content_type="application/json")
 
-# FUNGSI HAPUS & UBAH DATA (DIKUNCI: HANYA SUPERUSER)
+# FUNGSI HAPUS DATA (DIKUNCI: HANYA SUPERUSER)
 @login_required(login_url='/login/')
 def delete_achievement(request, id):
     if not request.user.is_superuser:
@@ -241,9 +249,10 @@ def delete_certification(request, id):
         messages.success(request, "Sertifikasi berhasil dihapus!")
     return redirect("main:show_certifications")
 
+# FUNGSI EDIT DATA (DIKUNCI: SUPERUSER ATAU EDITOR)
 @login_required(login_url='/login/')
 def edit_achievement(request, id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or is_editor(request.user)):
         raise PermissionDenied
     data = get_object_or_404(Achievement, pk=id)
     form = AchievementForm(request.POST or None, instance=data)
@@ -257,7 +266,7 @@ def edit_achievement(request, id):
 
 @login_required(login_url='/login/')
 def edit_experience(request, id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or is_editor(request.user)):
         raise PermissionDenied
     data = get_object_or_404(Experience, pk=id)
     form = ExperienceForm(request.POST or None, instance=data)
@@ -271,7 +280,7 @@ def edit_experience(request, id):
 
 @login_required(login_url='/login/')
 def edit_education(request, id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or is_editor(request.user)):
         raise PermissionDenied
     data = get_object_or_404(Education, pk=id)
     form = EducationForm(request.POST or None, instance=data)
@@ -285,7 +294,7 @@ def edit_education(request, id):
 
 @login_required(login_url='/login/')
 def edit_certification(request, id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or is_editor(request.user)):
         raise PermissionDenied
     data = get_object_or_404(Certification, pk=id)
     form = CertificationForm(request.POST or None, instance=data)
@@ -300,12 +309,8 @@ def edit_certification(request, id):
 # FUNGSI INTERAKSI (STAR) - BISA DIAKSES SEMUA USER YANG LOGIN
 @login_required(login_url="/login/")
 def toggle_star(request, id):
-    # Mengambil data experience berdasarkan id
     experience = get_object_or_404(Experience, pk=id)
-    
     if request.method == "POST":
-        # Kalau akun ini sudah pernah memberi star, batalkan star-nya
-        # Kalau belum, tambahkan star
         if request.user in experience.starred_by.all():
             experience.starred_by.remove(request.user)
         else:
