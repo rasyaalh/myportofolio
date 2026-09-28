@@ -11,10 +11,12 @@
             <p class="section-kicker">Awards & Achievements</p>
             <h1>Awards & Achievements</h1>
             
-            <!-- Tombol Tambah Data -->
+            {% if user.is_superuser %}
+            <!-- Tombol Tambah Data (Hanya untuk Superuser) -->
             <a href="{% url 'main:create_achievement' %}" class="button" style="margin-bottom: 2rem; display: inline-block;">
                 + Tambah Penghargaan
             </a>
+            {% endif %}
 
             <div id="achievement_cards" class="card-grid"></div>
 
@@ -24,8 +26,10 @@
 
 <!-- SCRIPT FETCH & DESERIALISASI JSON -->
 <script>
+    const isSuperuser = "{% if user.is_superuser %}true{% else %}false{% endif %}" === "true";
+
     async function getAchievements() {
-        return fetch("{% url 'main:get_achievements_json' %}").then((res) => res.json())
+        return fetch("{% url 'main:get_achievements_json' %}").then((res) => res.json());
     }
 
     async function refreshAchievements() {
@@ -43,13 +47,9 @@
                 const description = item.fields.description;
                 const year = item.fields.year;
                 
-                htmlString += `
-                <article class="experience-card">
-                    <span class="experience-category">${rank}</span>
-                    <h2>${title}</h2>
-                    <p class="experience-description">${description}</p>
-                    <p class="experience-status">Year: ${year}</p>
-                    
+                let actionButtons = "";
+                if (isSuperuser) {
+                    actionButtons = `
                     <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
                         <a href="/achievements/${pk}/edit/" class="button button-secondary">Edit</a>
                         
@@ -70,6 +70,16 @@
                             </div>
                         </div>
                     </div>
+                    `;
+                }
+
+                htmlString += `
+                <article class="experience-card">
+                    <span class="experience-category">${rank}</span>
+                    <h2>${title}</h2>
+                    <p class="experience-description">${description}</p>
+                    <p class="experience-status">Year: ${year}</p>
+                    ${actionButtons}
                 </article>
                 `;
             });

@@ -1,7 +1,12 @@
 import uuid
 from django.db import models
+from django.contrib.auth.models import User
 
 class Experience(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    # Fitur Interaktif (Star)
+    starred_by = models.ManyToManyField(User, related_name='starred_experiences', blank=True)
+    
     EXPERIENCE_CHOICES = [
         ('internship', 'Internship'),
         ('research', 'Research'),
@@ -26,9 +31,11 @@ class Experience(models.Model):
     def is_ongoing(self):
         return self.ended_at is None
 
-#TUGAS 2
+
+# TUGAS 2
 
 class Achievement(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     rank = models.CharField(max_length=100)
@@ -38,7 +45,9 @@ class Achievement(models.Model):
     def __str__(self):
         return self.title
 
+
 class Education(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     institution = models.CharField(max_length=255)
     degree = models.CharField(max_length=255)
@@ -47,7 +56,9 @@ class Education(models.Model):
     def __str__(self):
         return self.institution
 
+
 class Certification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     issuer = models.CharField(max_length=255)

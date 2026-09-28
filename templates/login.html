@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block meta %}
+<title>Login - {{ name }}</title>
+{% endblock meta %}
+
+{% block content %}
+<main class="container" style="max-width: 400px; margin-top: 50px; text-align: center;">
+    <h2>Login</h2>
+    <p>Silakan masuk ke akun Anda.</p>
+
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div style="text-align: left; margin-bottom: 20px;">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn" style="width: 100%; background-color: var(--primary-color, #007bff); color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">
+            Login
+        </button>
+    </form>
+
+    {% if messages %}
+    <ul class="messages" style="list-style: none; padding: 0; color: #d32f2f; margin-top: 15px;">
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <p style="margin-top: 20px;">
+        Belum punya akun? <a href="{% url 'main:register' %}">Daftar di sini</a>.
+    </p>
+</main>
+{% endblock content %}

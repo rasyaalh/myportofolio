@@ -33,6 +33,15 @@
                             <li><a href="{% url 'main:show_achievements' %}">Achievements</a></li>
                             <li><a href="{% url 'main:show_education' %}">Education History</a></li>
                             <li><a href="{% url 'main:show_certifications' %}">Certifications</a></li>
+                            
+                            <!-- Opsi Autentikasi -->
+                            <hr style="margin: 8px 0; border: none; border-top: 1px solid var(--border-color, #ccc);">
+                            {% if user.is_authenticated %}
+                                <li><a href="{% url 'main:logout' %}" style="color: #e53e3e;">Logout</a></li>
+                            {% else %}
+                                <li><a href="{% url 'main:login' %}">Login</a></li>
+                                <li><a href="{% url 'main:register' %}">Register</a></li>
+                            {% endif %}
                         </ul>
                     </details>
                 </nav>
