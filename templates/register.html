@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block meta %}
+<title>Register - {{ name }}</title>
+{% endblock meta %}
+
+{% block content %}
+<main class="container" style="max-width: 400px; margin-top: 50px; text-align: center;">
+    <h2>Buat Akun</h2>
+    <p>Daftarkan diri Anda untuk mengelola portofolio.</p>
+
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div style="text-align: left; margin-bottom: 20px;">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn" style="width: 100%; background-color: var(--primary-color, #28a745); color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">
+            Register
+        </button>
+    </form>
+
+    {% if form.errors %}
+    <div style="color: #d32f2f; margin-top: 15px; text-align: left;">
+        <p>Terdapat kesalahan pada input:</p>
+        {{ form.errors }}
+    </div>
+    {% endif %}
+
+    <p style="margin-top: 20px;">
+        Sudah punya akun? <a href="{% url 'main:login' %}">Login di sini</a>.
+    </p>
+</main>
+{% endblock content %}

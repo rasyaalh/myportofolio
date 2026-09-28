@@ -1,10 +1,15 @@
 from django.urls import path
-from main.views import * 
+from main.views import *
 
 app_name = "main"
 
 urlpatterns = [
     path("", show_main, name="show_main"),
+    
+    # Fitur Autentikasi
+    path("register/", register, name="register"),
+    path("login/", login_user, name="login"),
+    path("logout/", logout_user, name="logout"),
     
     # Halaman Utama & Form
     path("experience/", show_experience, name="show_experience"),
@@ -33,4 +38,6 @@ urlpatterns = [
     path("achievements/<str:id>/edit/", edit_achievement, name="edit_achievement"),
     path("education/<str:id>/edit/", edit_education, name="edit_education"),
     path("certifications/<str:id>/edit/", edit_certification, name="edit_certification"),
+
+    path('experience/<uuid:id>/star/', toggle_star, name='toggle_star'),
 ]

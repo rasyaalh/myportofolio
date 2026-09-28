@@ -1,0 +1,13 @@
+<form method="post" action="{% url 'main:toggle_star' experience.id %}" style="display: inline;">
+    {% csrf_token %}
+    <button type="submit" 
+        class="button button-star{% if user in experience.starred_by.all %} is-starred{% endif %}" 
+        title="{% if experience.starred_by.all %}Disukai oleh {{ experience.starred_by.all|join:', ' }}{% else %}Jadilah yang pertama menyukai ini{% endif %}"
+        style="display: inline-flex; align-items: center; gap: 0.4rem;">
+        <span aria-hidden="true">★</span>
+        {% if user in experience.starred_by.all %}Unstar{% else %}Star{% endif %}
+        <span class="star-count" style="padding: 0.05rem 0.4rem; border-radius: 999px; background: rgba(255, 255, 255, 0.25); font-size: 0.8rem;">
+            {{ experience.starred_by.count }}
+        </span>
+    </button>
+</form>

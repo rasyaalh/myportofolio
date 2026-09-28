@@ -11,9 +11,11 @@
             <p class="section-kicker">Certifications & Courses</p>
             <h1>Certifications & Courses</h1>
 
+            {% if user.is_superuser %}
             <a href="{% url 'main:create_certification' %}" class="button" style="margin-bottom: 2rem; display: inline-block;">
                 + Tambah Sertifikasi
             </a>
+            {% endif %}
 
             <div id="certification_cards" class="card-grid"></div>
         </div>
@@ -21,8 +23,10 @@
 </main>
 
 <script>
+    const isSuperuser = "{% if user.is_superuser %}true{% else %}false{% endif %}" === "true";
+
     async function getCertifications() {
-        return fetch("{% url 'main:get_certifications_json' %}").then((res) => res.json())
+        return fetch("{% url 'main:get_certifications_json' %}").then((res) => res.json());
     }
 
     async function refreshCertifications() {
@@ -39,12 +43,9 @@
                 const issuer = item.fields.issuer;
                 const issue_date = item.fields.issue_date;
                 
-                htmlString += `
-                <article class="experience-card">
-                    <span class="experience-category">${issuer}</span>
-                    <h2>${title}</h2>
-                    <p class="experience-status">Issued: ${issue_date}</p>
-
+                let actionButtons = "";
+                if (isSuperuser) {
+                    actionButtons = `
                     <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
                         <a href="/certifications/${pk}/edit/" class="button button-secondary">Edit</a>
                         
@@ -64,6 +65,15 @@
                             </div>
                         </div>
                     </div>
+                    `;
+                }
+
+                htmlString += `
+                <article class="experience-card">
+                    <span class="experience-category">${issuer}</span>
+                    <h2>${title}</h2>
+                    <p class="experience-status">Issued: ${issue_date}</p>
+                    ${actionButtons}
                 </article>
                 `;
             });

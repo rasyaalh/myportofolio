@@ -11,9 +11,11 @@
             <p class="section-kicker">My Experience</p>
             <h1>Experience</h1>
             
+            {% if user.is_superuser %}
             <a href="{% url 'main:create_experience' %}" class="button" style="margin-bottom: 2rem; display: inline-block;">
                 + Tambah Pengalaman
             </a>
+            {% endif %}
             
             <div id="experience_cards" class="experience-grid"></div>
         </div>
@@ -21,8 +23,11 @@
 </main>
 
 <script>
+    const isSuperuser = "{% if user.is_superuser %}true{% else %}false{% endif %}" === "true";
+    const currentUser = "{{ user.username }}";
+
     async function getExperience() {
-        return fetch("{% url 'main:get_experience_json' %}").then((res) => res.json())
+        return fetch("{% url 'main:get_experience_json' %}").then((res) => res.json());
     }
 
     async function refreshExperience() {
@@ -39,13 +44,30 @@
                 const category = item.fields.category;
                 const description = item.fields.description;
                 
-                htmlString += `
-                <article class="experience-card">
-                    <span class="experience-category">${category}</span>
-                    <h2>${title}</h2>
-                    <p class="experience-description">${description}</p>
-                    
-                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                const starredBy = item.fields.starred_by || [];
+                const isStarred = starredBy.some(userArray => userArray[0] === currentUser);
+                const starCount = starredBy.length;
+                const starText = isStarred ? "Unstar" : "Star";
+                const starClass = isStarred ? "is-starred" : "";
+                const titleText = starCount > 0 ? `Disukai oleh ${starredBy.map(u => u[0]).join(', ')}` : "Jadilah yang pertama menyukai ini";
+
+                let starButtonHTML = `
+                <form method="post" action="/experience/${pk}/star/" style="display: inline-block; margin-top: 1rem; margin-right: 0.5rem;">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-star ${starClass}" title="${titleText}" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; border: none; border-radius: 4px; cursor: pointer; background-color: ${isStarred ? 'var(--accent, #d97757)' : 'var(--ink, #1e1e1e)'}; color: white;">
+                        <span aria-hidden="true">★</span>
+                        ${starText}
+                        <span class="star-count" style="padding: 0.05rem 0.4rem; border-radius: 999px; background: rgba(255, 255, 255, 0.25); font-size: 0.8rem; margin-left: 0.5rem;">
+                            ${starCount}
+                        </span>
+                    </button>
+                </form>
+                `;
+                
+                let actionButtons = "";
+                if (isSuperuser) {
+                    actionButtons = `
+                    <div style="margin-top: 1rem; display: inline-flex; gap: 0.5rem;">
                         <a href="/experience/${pk}/edit/" class="button button-secondary">Edit</a>
                         
                         <button type="button" class="button button-danger" popovertarget="delete-experience-${pk}">Hapus</button>
@@ -63,6 +85,18 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    `;
+                }
+
+                htmlString += `
+                <article class="experience-card" style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem;">
+                    <span class="experience-category" style="text-transform: uppercase; font-size: 0.8rem; color: #666;">${category}</span>
+                    <h2 style="margin: 0.5rem 0;">${title}</h2>
+                    <p class="experience-description">${description}</p>
+                    <div style="display: flex; align-items: center; flex-wrap: wrap;">
+                        ${starButtonHTML}
+                        ${actionButtons}
                     </div>
                 </article>
                 `;
