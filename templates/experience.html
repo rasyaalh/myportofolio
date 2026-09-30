@@ -11,152 +11,292 @@
             <p class="section-kicker">My Experience</p>
             <h1>Experience</h1>
             
+            <!-- Tombol Modal Form AJAX -->
             {% if user.is_superuser %}
-            <a href="{% url 'main:create_experience' %}" class="button" style="margin-bottom: 2rem; display: inline-block;">
+            <button type="button" class="button" style="margin-bottom: 2rem; display: inline-block;" popovertarget="add-experience-modal">
                 + Tambah Pengalaman
-            </a>
+            </button>
+            {% include "components/experience_form_modal.html" %}
             {% endif %}
             
-            <!-- FITUR KREATIVITAS: Live Search & Category Filter -->
-            <div style="margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                <input type="text" id="search-input" placeholder="Cari pengalaman berdasarkan judul/deskripsi..." style="padding: 0.6rem 1rem; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 250px; font-size: 0.95rem;">
-                <select id="category-filter" style="padding: 0.6rem 1rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; background-color: white;">
-                    <option value="">Semua Kategori</option>
-                    <option value="internship">Internship</option>
-                    <option value="research">Research</option>
-                    <option value="volunteer">Volunteer</option>
-                    <option value="part-time">Part-Time</option>
-                    <option value="full-time">Full-Time</option>
-                    <option value="freelance">Freelance</option>
+            <!-- Form Live Search & Category Filter -->
+            <form id="experience-search-form" class="project-search" style="margin-bottom: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <input type="search"
+                       id="search-input"
+                       name="title"
+                       value="{{ title_query }}"
+                       placeholder="Cari berdasarkan nama pengalaman..."
+                       class="project-search_input"
+                       style="padding: 0.6rem 1rem; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 250px; font-size: 0.95rem;">
+                
+                <select id="category-filter" name="category" style="padding: 0.6rem 1rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; background-color: white;">
+                    <option value="" {% if category_query == "" %}selected{% endif %}>Semua Kategori</option>
+                    <option value="internship" {% if category_query == "internship" %}selected{% endif %}>Internship</option>
+                    <option value="research" {% if category_query == "research" %}selected{% endif %}>Research</option>
+                    <option value="volunteer" {% if category_query == "volunteer" %}selected{% endif %}>Volunteer</option>
+                    <option value="part-time" {% if category_query == "part-time" %}selected{% endif %}>Part-Time</option>
+                    <option value="full-time" {% if category_query == "full-time" %}selected{% endif %}>Full-Time</option>
+                    <option value="freelance" {% if category_query == "freelance" %}selected{% endif %}>Freelance</option>
                 </select>
+                <button type="submit" class="button hide" style="display: none;">Cari</button>
+            </form>
+
+            <!-- Loading State -->
+            <div id="loading" class="empty-state hide" style="text-align: center; padding: 2rem; color: #666; display: none;">
+                <p>Memuat pengalaman...</p>
             </div>
 
-            <div id="experience_cards" class="experience-grid"></div>
+            <!-- Error State -->
+            <div id="error" class="empty-state hide" style="text-align: center; padding: 2rem; color: #b42318; display: none;">
+                <p>Gagal memuat data. Silakan coba lagi.</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty" class="empty-state hide" style="text-align: center; padding: 2rem; color: #666; display: none;">
+                <p>Tidak ada pengalaman yang ditemukan.</p>
+            </div>
+
+            <!-- Experience Grid -->
+            <div id="experience_cards" class="experience-grid hide" style="display: none;"></div>
         </div>
     </section>
 </main>
 
 <script>
-    const isSuperuser = "{% if user.is_superuser %}true{% else %}false{% endif %}" === "true";
-    const isEditorRole = "{% if is_editor %}true{% else %}false{% endif %}" === "true";
-    const currentUser = "{{ user.username }}";
+    // Konfigurasi API dan Status Akses
+    const BASE_EXPERIENCE_ENDPOINT = "{% url 'main:get_experience_json' %}";
+    const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+    const IS_EDITOR = "{{ is_editor|yesno:'true,false' }}" === "true";
+    const SEARCH_DEBOUNCE_DELAY = 300; 
+    let experienceAbortController;
+    let searchDebounceTimer;
 
-    let allExperiences = [];
+    // Elemen DOM
+    const loadingState = document.getElementById('loading');
+    const errorState = document.getElementById('error');
+    const emptyState = document.getElementById('empty');
+    const gridContainer = document.getElementById('experience_cards');
+    const searchForm = document.getElementById('experience-search-form');
+    const searchInput = document.getElementById('search-input');
+    const categoryFilter = document.getElementById('category-filter');
 
-    async function getExperience() {
-        return fetch("{% url 'main:get_experience_json' %}").then((res) => res.json());
+    // Fungsi Mencegah XSS (Cross-Site Scripting)
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     }
 
-    async function initExperience() {
-        allExperiences = await getExperience();
-        renderExperiences(allExperiences);
-
-        // Tambahkan event listener untuk memicu penyaringan secara real-time
-        document.getElementById("search-input").addEventListener("input", filterExperiences);
-        document.getElementById("category-filter").addEventListener("change", filterExperiences);
+    // Menyembunyikan/Menampilkan section halaman
+    function displayPageSection({ showLoading = false, showGrid = false, showError = false, showEmpty = false }) {
+        loadingState.style.display = showLoading ? 'block' : 'none';
+        errorState.style.display = showError ? 'block' : 'none';
+        emptyState.style.display = showEmpty ? 'block' : 'none';
+        gridContainer.style.display = showGrid ? 'grid' : 'none'; 
     }
 
-    function filterExperiences() {
-        const keyword = document.getElementById("search-input").value.toLowerCase();
-        const selectedCategory = document.getElementById("category-filter").value;
+    // Membuat elemen card experience dari JSON
+    function buildExperienceCardElement(item) {
+        const experience = item.fields;
+        const pk = item.pk;
 
-        const filtered = allExperiences.filter((item) => {
-            const title = item.fields.title.toLowerCase();
-            const description = item.fields.description.toLowerCase();
-            const category = item.fields.category;
+        const articleElement = document.createElement('article');
+        articleElement.className = 'experience-card';
+        articleElement.style.cssText = 'padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem;';
 
-            const matchesKeyword = title.includes(keyword) || description.includes(keyword);
-            const matchesCategory = selectedCategory === "" || category === selectedCategory;
+        const starUrl = `{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', pk);
+        const isStarredClass = experience.is_starred ? "is-starred" : "";
+        const starText = experience.is_starred ? "Unstar" : "Star";
+        const starTitle = experience.star_count > 0 
+            ? `Disukai oleh ${escapeHtml(experience.starred_by_names)}` 
+            : "Jadilah yang pertama menyukai ini";
+        const starColor = experience.is_starred ? 'var(--accent, #d97757)' : 'var(--ink, #1e1e1e)';
 
-            return matchesKeyword && matchesCategory;
-        });
-
-        renderExperiences(filtered);
-    }
-
-    function renderExperiences(experiences) {
-        const container = document.getElementById("experience_cards");
-        container.innerHTML = "";
-        let htmlString = "";
+        let actionButtons = "";
         
-        if (experiences.length === 0) {
-            htmlString = '<p class="empty-state">Tidak ada pengalaman yang sesuai dengan pencarian.</p>';
-        } else {
-            experiences.forEach((item) => {
-                const pk = item.pk;
-                const title = item.fields.title;
-                const category = item.fields.category;
-                const description = item.fields.description;
-                
-                const starredBy = item.fields.starred_by || [];
-                const isStarred = starredBy.some(userArray => userArray[0] === currentUser);
-                const starCount = starredBy.length;
-                const starText = isStarred ? "Unstar" : "Star";
-                const starClass = isStarred ? "is-starred" : "";
-                const titleText = starCount > 0 ? `Disukai oleh ${starredBy.map(u => u[0]).join(', ')}` : "Jadilah yang pertama menyukai ini";
+        if (IS_SUPERUSER || IS_EDITOR) {
+            actionButtons += `
+            <div style="margin-top: 1rem; display: inline-flex; gap: 0.5rem;">
+                <a href="/experience/${escapeHtml(pk)}/edit/" class="button button-secondary">Edit</a>
+            `;
+        }
 
-                let starButtonHTML = `
-                <form method="post" action="/experience/${pk}/star/" style="display: inline-block; margin-top: 1rem; margin-right: 0.5rem;">
+        if (IS_SUPERUSER) {
+            const deleteUrl = `{% url 'main:delete_experience' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', pk);
+            actionButtons += `
+                <button type="button" class="button button-danger" popovertarget="delete-experience-${escapeHtml(pk)}">Hapus</button>
+
+                <div id="delete-experience-${escapeHtml(pk)}" class="project-delete-modal" popover="auto">
+                    <div class="project-delete-modal_content">
+                        <h2>Hapus Pengalaman?</h2>
+                        <p>Apakah Anda yakin ingin menghapus <strong>${escapeHtml(experience.title)}</strong>?</p>
+                        <div class="project-delete-modal_actions">
+                            <button type="button" class="button button-secondary" popovertarget="delete-experience-${escapeHtml(pk)}" popovertargetaction="hide">Batal</button>
+                            <form method="post" action="${deleteUrl}">
+                                {% csrf_token %}
+                                <button type="submit" class="button button-danger">Ya, Hapus</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (IS_SUPERUSER || IS_EDITOR) {
+            actionButtons += `</div>`;
+        }
+
+        articleElement.innerHTML = `
+            <span class="experience-category" style="text-transform: uppercase; font-size: 0.8rem; color: #666;">
+                ${escapeHtml(experience.category)}
+            </span>
+            <h2 style="margin: 0.5rem 0;">${escapeHtml(experience.title)}</h2>
+            <p class="experience-description">${escapeHtml(experience.description)}</p>
+            <div style="display: flex; align-items: center; flex-wrap: wrap;">
+                <form method="post" action="${starUrl}" style="display: inline-block; margin-top: 1rem; margin-right: 0.5rem;">
                     {% csrf_token %}
-                    <button type="submit" class="button button-star ${starClass}" title="${titleText}" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; border: none; border-radius: 4px; cursor: pointer; background-color: ${isStarred ? 'var(--accent, #d97757)' : 'var(--ink, #1e1e1e)'}; color: white;">
+                    <button type="submit" class="button button-star ${isStarredClass}" title="${starTitle}" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; border: none; border-radius: 4px; cursor: pointer; background-color: ${starColor}; color: white;">
                         <span aria-hidden="true">★</span>
                         ${starText}
                         <span class="star-count" style="padding: 0.05rem 0.4rem; border-radius: 999px; background: rgba(255, 255, 255, 0.25); font-size: 0.8rem; margin-left: 0.5rem;">
-                            ${starCount}
+                            ${escapeHtml(experience.star_count)}
                         </span>
                     </button>
                 </form>
-                `;
-                
-                let actionButtons = "";
-                
-                if (isSuperuser || isEditorRole) {
-                    actionButtons += `
-                    <div style="margin-top: 1rem; display: inline-flex; gap: 0.5rem;">
-                        <a href="/experience/${pk}/edit/" class="button button-secondary">Edit</a>
-                    `;
-                }
-
-                if (isSuperuser) {
-                    actionButtons += `
-                        <button type="button" class="button button-danger" popovertarget="delete-experience-${pk}">Hapus</button>
-
-                        <div id="delete-experience-${pk}" class="project-delete-modal" popover="auto">
-                            <div class="project-delete-modal_content">
-                                <h2>Hapus Pengalaman?</h2>
-                                <p>Apakah Anda yakin ingin menghapus <strong>${title}</strong>?</p>
-                                <div class="project-delete-modal_actions">
-                                    <button type="button" class="button button-secondary" popovertarget="delete-experience-${pk}" popovertargetaction="hide">Batal</button>
-                                    <form method="post" action="/experience/${pk}/delete/">
-                                        {% csrf_token %}
-                                        <button type="submit" class="button button-danger">Ya, Hapus</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                if (isSuperuser || isEditorRole) {
-                    actionButtons += `</div>`;
-                }
-
-                htmlString += `
-                <article class="experience-card" style="padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem;">
-                    <span class="experience-category" style="text-transform: uppercase; font-size: 0.8rem; color: #666;">${category}</span>
-                    <h2 style="margin: 0.5rem 0;">${title}</h2>
-                    <p class="experience-description">${description}</p>
-                    <div style="display: flex; align-items: center; flex-wrap: wrap;">
-                        ${starButtonHTML}
-                        ${actionButtons}
-                    </div>
-                </article>
-                `;
-            });
-        }
-        container.innerHTML = htmlString;
+                ${actionButtons}
+            </div>
+        `;
+        return articleElement;
     }
 
-    initExperience();
+    // Mengambil data melalui AJAX Fetch
+    async function fetchExperience() {
+        const searchQuery = searchInput.value.trim();
+        const categoryQuery = categoryFilter.value;
+
+        if (experienceAbortController) experienceAbortController.abort();
+        experienceAbortController = new AbortController();
+
+        try {
+            displayPageSection({ showLoading: true });
+            
+            const urlParams = new URLSearchParams();
+            if (searchQuery) urlParams.append('title', searchQuery);
+            if (categoryQuery) urlParams.append('category', categoryQuery);
+            const urlString = urlParams.toString();
+            const url = urlString ? `${BASE_EXPERIENCE_ENDPOINT}?${urlString}` : BASE_EXPERIENCE_ENDPOINT;
+
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: experienceAbortController.signal,
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch data');
+            
+            const data = await response.json();
+            
+            gridContainer.innerHTML = "";
+            if (data.length === 0) {
+                displayPageSection({ showEmpty: true });
+            } else {
+                data.forEach(item => {
+                    gridContainer.appendChild(buildExperienceCardElement(item));
+                });
+                displayPageSection({ showGrid: true });
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Error loading experience:', error);
+            displayPageSection({ showError: true });
+        }
+    }
+
+    // Debounce Handler untuk pencarian
+    function handleSearchInput() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(function() {
+            fetchExperience();
+        }, SEARCH_DEBOUNCE_DELAY);
+    }
+
+    searchInput.addEventListener("input", handleSearchInput);
+    categoryFilter.addEventListener("change", handleSearchInput); 
+
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault(); 
+        clearTimeout(searchDebounceTimer);
+        fetchExperience(); 
+    });
+
+    // ==========================================
+    // AJAX: Tambah Data Experience (Modal Form)
+    // ==========================================
+    const CREATE_EXPERIENCE_ENDPOINT = "{% url 'main:create_experience_ajax' %}";
+    const experienceForm = document.getElementById('experience-form');
+
+    function closeExperienceModal() {
+        const modal = document.getElementById("add-experience-modal");
+        if (modal) {
+            modal.hidePopover();
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function addExperience(event) {
+        event.preventDefault();
+        const submitButton = experienceForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+
+        try {
+            const response = await fetch(CREATE_EXPERIENCE_ENDPOINT, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: new FormData(experienceForm),
+            });
+
+            const result = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                experienceForm.reset();
+                closeExperienceModal();
+                showToast('Berhasil', 'Pengalaman baru berhasil ditambahkan!', 'success');
+                fetchExperience(); 
+            } else {
+                const errorMessages = result.errors 
+                    ? Object.values(result.errors).flat().map(error => error.message)
+                    : [result.message || `Terjadi kesalahan (status ${response.status}).`];
+                showToast('Gagal menambahkan data', errorMessages.join('<br>'), 'error');
+            }
+        } catch (error) {
+            console.error('Error adding experience:', error);
+            showToast('Gagal', 'Tidak dapat terhubung ke server.', 'error');
+        } finally {
+            submitButton.disabled = false;
+        }
+    }
+
+    if (experienceForm) {
+        experienceForm.addEventListener('submit', addExperience);
+    }
+
+    // Inisialisasi awal saat halaman dimuat
+    fetchExperience();
 </script>
 {% endblock content %}

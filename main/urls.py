@@ -40,4 +40,6 @@ urlpatterns = [
     path("certifications/<str:id>/edit/", edit_certification, name="edit_certification"),
 
     path('experience/<uuid:id>/star/', toggle_star, name='toggle_star'),
+
+    path('experience/add-ajax/', create_experience_ajax, name='create_experience_ajax'),
 ]

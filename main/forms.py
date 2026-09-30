@@ -1,4 +1,6 @@
 from django.forms import ModelForm, TextInput, Textarea, NumberInput, Select, DateInput
+from django.core.exceptions import ValidationError
+from django.utils.html import strip_tags
 from main.models import Achievement, Experience, Education, Certification
 
 class AchievementForm(ModelForm):
@@ -22,6 +24,15 @@ class ExperienceForm(ModelForm):
             "description": Textarea(attrs={"placeholder": "Jelaskan peranmu...", "rows": 3}),
             "ended_at": DateInput(attrs={"type": "date"}),
         }
+
+    def clean_title(self):
+        title = strip_tags(self.cleaned_data["title"]).strip()
+        if not title:
+            raise ValidationError("Judul pengalaman tidak boleh hanya berisi tag HTML.")
+        return title
+
+    def clean_description(self):
+        return strip_tags(self.cleaned_data["description"]).strip()
 
 class EducationForm(ModelForm):
     class Meta:

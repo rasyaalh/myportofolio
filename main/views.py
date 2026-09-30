@@ -6,7 +6,7 @@ import datetime
 from main.models import Experience, Achievement, Education, Certification
 from .forms import AchievementForm, ExperienceForm, EducationForm, CertificationForm
 
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.core import serializers
 from django.urls import reverse
 from django.core.exceptions import PermissionDenied
@@ -14,6 +14,8 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+
+from django.views.decorators.http import require_POST
 
 # FUNGSI BANTUAN UNTUK CEK EDITOR
 def is_editor(user):
@@ -99,9 +101,14 @@ def show_main(request):
 
 # FUNGSI MENAMPILKAN HALAMAN LIST (PUBLIK) DENGAN STATUS EDITOR
 def show_experience(request):
+    title_query = request.GET.get("title", "").strip()
+    category_query = request.GET.get("category", "").strip()
+    
     context = {
         "name": request.user.username if request.user.is_authenticated else "Rasya Al Hawari",
-        "experience_list": Experience.objects.all(),
+        "title_query": title_query,
+        "category_query": category_query,
+        "form": ExperienceForm(), # Ditambahkan agar modal pop-up memiliki struktur form-nya
         "is_editor": is_editor(request.user) if request.user.is_authenticated else False,
     }
     return render(request, "experience.html", context)
@@ -197,8 +204,34 @@ def get_achievements_json(request):
     return HttpResponse(serializers.serialize("json", data, use_natural_foreign_keys=True), content_type="application/json")
 
 def get_experience_json(request):
-    data = Experience.objects.all()
-    return HttpResponse(serializers.serialize("json", data, use_natural_foreign_keys=True), content_type="application/json")
+    title_query = request.GET.get("title", "").strip()
+    category_query = request.GET.get("category", "").strip()
+    
+    experiences = Experience.objects.prefetch_related('starred_by').all()
+    
+    if title_query:
+        experiences = experiences.filter(title__icontains=title_query)
+    if category_query:
+        experiences = experiences.filter(category=category_query)
+        
+    data = []
+    for experience in experiences:
+        starred_users = experience.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+        
+        data.append({
+            "pk": str(experience.id) if hasattr(experience, 'id') else str(experience.pk),
+            "fields": {
+                "title": experience.title,
+                "description": experience.description,
+                "category": experience.category,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+    return JsonResponse(data, safe=False)
 
 def get_education_json(request):
     data = Education.objects.all()
@@ -317,3 +350,22 @@ def toggle_star(request, id):
             experience.starred_by.add(request.user)
             
     return redirect("main:show_experience")
+
+@require_POST
+def create_experience_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan pengalaman."},
+            status=403,
+        )
+
+    form = ExperienceForm(request.POST)
+    if form.is_valid():
+        experience = form.save(commit=False)
+        experience.user = request.user
+        experience.save()
+        return JsonResponse(
+            {"message": "Pengalaman berhasil ditambahkan.", "pk": str(experience.pk)},
+            status=201,
+        )
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
