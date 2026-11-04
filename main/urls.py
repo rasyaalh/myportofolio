@@ -1,5 +1,6 @@
 from django.urls import path
 from main.views import *
+from . import views
 
 app_name = "main"
 
@@ -42,4 +43,5 @@ urlpatterns = [
     path('experience/<uuid:id>/star/', toggle_star, name='toggle_star'),
 
     path('experience/add-ajax/', create_experience_ajax, name='create_experience_ajax'),
+
 ]
