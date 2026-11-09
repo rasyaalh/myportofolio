@@ -4,18 +4,8 @@ from django.contrib.auth.models import User
 
 class Experience(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    # Fitur Interaktif (Star)
     starred_by = models.ManyToManyField(User, related_name='starred_experiences', blank=True)
-    
-    EXPERIENCE_CHOICES = [
-        ('internship', 'Internship'),
-        ('research', 'Research'),
-        ('volunteer', 'Volunteer'),
-        ('part-time', 'Part-Time'),
-        ('full-time', 'Full-Time'),
-        ('freelance', 'Freelance'),
-    ]
-
+    EXPERIENCE_CHOICES = [('internship', 'Internship'), ('research', 'Research'), ('volunteer', 'Volunteer'), ('part-time', 'Part-Time'), ('full-time', 'Full-Time'), ('freelance', 'Freelance')]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     description = models.TextField()
@@ -23,53 +13,39 @@ class Experience(models.Model):
     thumbnail = models.URLField(blank=True, null=True)
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField(blank=True, null=True)
-
-    def __str__(self):
-        return self.title
-
+    def __str__(self): return self.title
     @property
-    def is_ongoing(self):
-        return self.ended_at is None
-
-
-# TUGAS 2
+    def is_ongoing(self): return self.ended_at is None
 
 class Achievement(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    starred_by = models.ManyToManyField(User, related_name='starred_achievements', blank=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     rank = models.CharField(max_length=100)
     description = models.TextField()
     year = models.IntegerField()
-
-    def __str__(self):
-        return self.title
-
+    def __str__(self): return self.title
 
 class Education(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    starred_by = models.ManyToManyField(User, related_name='starred_educations', blank=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     institution = models.CharField(max_length=255)
     degree = models.CharField(max_length=255)
     period = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.institution
-
+    def __str__(self): return self.institution
 
 class Certification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    starred_by = models.ManyToManyField(User, related_name='starred_certifications', blank=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     issuer = models.CharField(max_length=255)
     issue_date = models.DateField()
-
-    def __str__(self):
-        return self.title
+    def __str__(self): return self.title
 
 class Contact(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField()
-
-    def __str__(self):
-        return self.name
+    def __str__(self): return self.name

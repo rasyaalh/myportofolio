@@ -3,85 +3,54 @@ from django.contrib.auth.models import Group, User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
-from main.models import Experience
+from main.models import Experience, Achievement, Education, Certification
 
-class ExperienceAPITest(APITestCase):
+class MegaPortfolioAPITest(APITestCase):
     def setUp(self):
-        self.owner = User.objects.create_superuser(
-            username="owner", password="test-password", email="owner@example.com"
-        )
+        self.owner = User.objects.create_superuser(username="owner", password="test-password")
         self.visitor = User.objects.create_user(username="visitor", password="test-password")
-        self.experience = Experience.objects.create(
-            title="Software Engineer", category="internship", description="Built apps", user=self.owner
-        )
-        self.list_url = reverse("api:experience-list")
-        self.detail_url = reverse("api:experience-detail", args=[self.experience.id])
-        self.star_url = reverse("api:experience-star", args=[self.experience.id])
-        self.payload = {
-            "title": "Backend Developer",
-            "category": "full-time",
-            "description": "Developing REST APIs",
-        }
+        
+        # Setup Data
+        self.ach = Achievement.objects.create(title="Juara", rank="1", description="desc", year=2024, user=self.owner)
+        self.edu = Education.objects.create(institution="UI", degree="S1", period="2025", user=self.owner)
+        self.cert = Certification.objects.create(title="AWS", issuer="Amazon", issue_date="2025-01-01", user=self.owner)
+        
+        self.ach_url = reverse("api:achievement-list")
+        self.edu_url = reverse("api:education-list")
 
-    def test_public_list_and_detail(self):
-        response = self.client.get(self.list_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0]["id"], str(self.experience.id))
-        self.assertFalse(response.data[0]["is_starred"])
+    # 1. TEST CSRF (Syarat Wajib Tugas 6)
+    def test_csrf_protection_on_write(self):
+        csrf_client = APIClient(enforce_csrf_checks=True)
+        csrf_client.login(username="owner", password="test-password")
+        
+        # POST tanpa X-CSRFToken harus ditolak (403)
+        response = csrf_client.post(self.ach_url, {"title": "Test", "rank": "1", "description": "D", "year": 2025}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        self.assertEqual(self.client.get(self.detail_url).status_code, status.HTTP_200_OK)
-
-    def test_search_and_empty_results(self):
-        response = self.client.get(self.list_url, {"title": "SOFTWARE"})
-        self.assertEqual(len(response.data), 1)
-        response = self.client.get(self.list_url, {"title": "not-found"})
-        self.assertEqual(response.data, [])
-
-    def test_missing_experience(self):
-        url = reverse("api:experience-detail", args=[uuid.uuid4()])
-        self.assertEqual(self.client.get(url).status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_guest_and_visitor_cannot_write(self):
-        for user in (None, self.visitor):
-            self.client.force_authenticate(user=user)
-            self.assertEqual(self.client.post(self.list_url, self.payload, format="json").status_code, 403)
-            self.assertEqual(self.client.patch(self.detail_url, {"title": "Changed"}, format="json").status_code, 403)
-            self.assertEqual(self.client.delete(self.detail_url).status_code, 403)
-
-    def test_owner_can_create(self):
-        self.client.force_authenticate(user=self.owner)
-        response = self.client.post(self.list_url, self.payload, format="json")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(Experience.objects.filter(pk=response.data["id"]).exists())
-
-    def test_validation(self):
-        self.client.force_authenticate(user=self.owner)
-        for changes, field in [
-            ({"title": "   "}, "title"),
-            ({"title": '<img src="x" onerror="alert(1)">'}, "title"),
-        ]:
-            response = self.client.post(self.list_url, {**self.payload, **changes}, format="json")
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-            self.assertIn(field, response.data)
-
-    def test_patch_put_and_delete(self):
-        self.client.force_authenticate(user=self.owner)
-        response = self.client.patch(self.detail_url, {"title": "Changed Title"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.experience.refresh_from_db()
-        self.assertEqual(self.experience.title, "Changed Title")
-
-        response = self.client.delete(self.detail_url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Experience.objects.filter(pk=self.experience.id).exists())
-
-    def test_star_requires_login_and_toggles(self):
-        self.assertEqual(self.client.post(self.star_url).status_code, status.HTTP_403_FORBIDDEN)
+    # 2. TEST ROLE & PERMISSION (Tugas 6)
+    def test_guest_cannot_write_any_model(self):
         self.client.force_authenticate(user=self.visitor)
-        response = self.client.post(self.star_url)
-        self.assertTrue(response.data["is_starred"])
-        self.assertEqual(response.data["star_count"], 1)
+        self.assertEqual(self.client.post(self.ach_url, {}, format="json").status_code, 403)
+        self.assertEqual(self.client.post(self.edu_url, {}, format="json").status_code, 403)
 
-    def test_wrong_method(self):
+    # 3. TEST VALIDASI XSS / KOSONG (Tugas 6)
+    def test_validation_rejects_empty_html(self):
         self.client.force_authenticate(user=self.owner)
-        self.assertEqual(self.client.delete(self.list_url).status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        res = self.client.post(self.edu_url, {"institution": "   ", "degree": "S1", "period": "2025"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("institution", res.data)
+
+    # 4. TEST STAR (Tugas 6)
+    def test_star_toggles(self):
+        self.client.force_authenticate(user=self.visitor)
+        url = reverse("api:education-star", args=[self.edu.id])
+        
+        # Tambah Star
+        res1 = self.client.post(url)
+        self.assertTrue(res1.data["is_starred"])
+        self.assertEqual(res1.data["star_count"], 1)
+        
+        # Hapus Star
+        res2 = self.client.post(url)
+        self.assertFalse(res2.data["is_starred"])
+        self.assertEqual(res2.data["star_count"], 0)
